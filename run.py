@@ -114,27 +114,69 @@ def print_due_tasks(printer):
         print(f"Error printing due tasks: {str(e)}")
 
 # Step 3: Format and print the news
-@app.route('/print_news')
+@app.route('/print_news', methods=['GET'])
 def print_news():
     try:
-        printer= Network(printer_ip)
+        # Increase the timeout for the request
+        from werkzeug.serving import WSGIRequestHandler
+        WSGIRequestHandler.protocol_version = "HTTP/1.1"
+        
+        # Check if the printer is available
+        try:
+            printer = Network(printer_ip, timeout=30)  # Increase timeout to 30 seconds
+            print("Printer connected successfully")
+        except Exception as printer_error:
+            print(f"Error connecting to printer: {str(printer_error)}")
+            return jsonify({"status": "error", "message": f"Failed to connect to printer: {str(printer_error)}"}), 500
+        
         # Print the feed title
-        print_daily_basics(printer= printer)
-
-        print_daily_quote(printer = printer)
+        try:
+            print("Printing daily basics...")
+            print_daily_basics(printer=printer)
+            print("Daily basics printed successfully")
+        except Exception as e:
+            print(f"Error printing daily basics: {str(e)}")
+        
+        try:
+            print("Printing daily quote...")
+            print_daily_quote(printer=printer)
+            print("Daily quote printed successfully")
+        except Exception as e:
+            print(f"Error printing daily quote: {str(e)}")
         
         # Print due tasks
-        print_due_tasks(printer = printer)
+        try:
+            print("Printing due tasks...")
+            print_due_tasks(printer=printer)
+            print("Due tasks printed successfully")
+        except Exception as e:
+            print(f"Error printing due tasks: {str(e)}")
 
-        #printer.set(align='center', bold=True, double_height=True)
-        print_rss_feed(printer = printer, caption = 'Heidelberg News', rss_feed_url='https://www.rnz.de/feed/139-RL_Heidelberg_free.xml', _count = 3)
+        try:
+            print("Printing Heidelberg News...")
+            print_rss_feed(printer=printer, caption='Heidelberg News', rss_feed_url='https://www.rnz.de/feed/139-RL_Heidelberg_free.xml', _count=3)
+            print("Heidelberg News printed successfully")
+        except Exception as e:
+            print(f"Error printing Heidelberg News: {str(e)}")
 
-        print_rss_feed(printer = printer, caption= 'Tagesschau', rss_feed_url='https://www.tagesschau.de/inland/index~rss2.xml', _count = 3)
+        try:
+            print("Printing Tagesschau...")
+            print_rss_feed(printer=printer, caption='Tagesschau', rss_feed_url='https://www.tagesschau.de/inland/index~rss2.xml', _count=3)
+            print("Tagesschau printed successfully")
+        except Exception as e:
+            print(f"Error printing Tagesschau: {str(e)}")
 
         # Step 4: Cut the paper
-        printer.cut()
+        try:
+            print("Cutting paper...")
+            printer.cut()
+            print("Paper cut successfully")
+        except Exception as e:
+            print(f"Error cutting paper: {str(e)}")
+            
         return jsonify({"status": "success", "message": "Printed successfully!"}), 200
     except Exception as e:
+        print(f"Error in print_news: {str(e)}")
         return jsonify({"status": "error", "message": f"Failed to print: {str(e)}"}), 500
 
 @app.route('/print_text')
