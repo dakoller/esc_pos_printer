@@ -508,6 +508,167 @@ def print_daily_quote(printer):
     except Exception as e:
         pprint(e)
 
+# New endpoint to print only tasks with date, quote, and random number
+@app.route('/print_tasks', methods=['GET'])
+def print_tasks():
+    try:
+        # Collect all data before starting the print process
+        print("Collecting data for printing tasks...")
+        
+        # Get daily basics data (date and sunrise/sunset)
+        try:
+            today = date.today()
+            today_str = today.strftime('%A %x')
+            
+            # Get sunrise/sunset data
+            sunset_response = requests.get("https://api.sunrise-sunset.org/json?lat=49.3988&lng=8.6724&date=today&tzid=Europe/Berlin")
+            if sunset_response.status_code != 200:
+                print(f"Failed to get sunrise/sunset data: {sunset_response.status_code}")
+                sunset_data = {"sunrise": "N/A", "sunset": "N/A"}
+            else:
+                sunset_data = sunset_response.json()['results']
+            
+            # Generate random number
+            random_number = random.randint(1, 53)
+            
+            print("Daily basics data collected successfully")
+        except Exception as e:
+            print(f"Error collecting daily basics data: {str(e)}")
+            return jsonify({"status": "error", "message": f"Failed to collect daily basics data: {str(e)}"}), 500
+        
+        # Get daily quote
+        try:
+            quote_response = requests.get('https://zenquotes.io/api/today')
+            if quote_response.status_code != 200:
+                print(f"Failed to get quote: {quote_response.status_code}")
+                quote_data = {"q": "Error getting quote", "a": ""}
+            else:
+                quote_data = quote_response.json()[0]
+                
+            print("Quote data collected successfully")
+        except Exception as e:
+            print(f"Error collecting quote data: {str(e)}")
+            return jsonify({"status": "error", "message": f"Failed to collect quote data: {str(e)}"}), 500
+        
+        # Get due tasks
+        try:
+            tasks_response = requests.get('http://localhost:5001/due_tasks')
+            if tasks_response.status_code != 200:
+                print(f"Failed to get due tasks: {tasks_response.status_code}")
+                tasks_data = {"tasks": [], "due_today": 0, "overdue": 0, "task_count": 0}
+            else:
+                tasks_data = tasks_response.json()
+                
+            print(f"Tasks data collected successfully: {tasks_data['task_count']} tasks")
+        except Exception as e:
+            print(f"Error collecting tasks data: {str(e)}")
+            return jsonify({"status": "error", "message": f"Failed to collect tasks data: {str(e)}"}), 500
+        
+        # Now that all data is collected, start the printing process
+        try:
+            printer = Network(printer_ip, timeout=30)  # Increase timeout to 30 seconds
+            print("Printer connected successfully")
+        except Exception as printer_error:
+            print(f"Error connecting to printer: {str(printer_error)}")
+            return jsonify({"status": "error", "message": f"Failed to connect to printer: {str(printer_error)}"}), 500
+        
+        # Print the date and basics
+        try:
+            print("Printing date and basics...")
+            printer.set(double_width=True, double_height=True, align='center', bold=True)
+            printer.text(f"{today_str}\n\n")
+            printer.set(double_width=False, double_height=False, align='center', bold=False, normal_textsize=True)
+            printer.text(f"{sunset_data['sunrise']} - {sunset_data['sunset']}\n")
+            
+            printer.set(double_width=True, double_height=True, align='center')
+            printer.text(f'# {random_number}\n')
+            printer.set(double_width=False, double_height=False, align='center', normal_textsize=True)
+            printer.set(align='left')
+            print("Date and basics printed successfully")
+        except Exception as e:
+            print(f"Error printing date and basics: {str(e)}")
+            
+        # Print the quote
+        try:
+            print("Printing quote...")
+            printer.set(bold=True, double_width=True, align='center')
+            printer.text(f"\n\n{quote_data['q']}\n")
+            printer.set(bold=False, normal_textsize=True, align='center')
+            printer.text(f"\n{quote_data['a']}\n\n")
+            printer.set(bold=False, normal_textsize=True, align='left')
+            print("Quote printed successfully")
+        except Exception as e:
+            print(f"Error printing quote: {str(e)}")
+        
+        # Print the tasks
+        try:
+            print("Printing tasks...")
+            tasks = tasks_data.get('tasks', [])
+            
+            if not tasks:
+                printer.text("\nNo due tasks found\n\n")
+            else:
+                # Print the header with due/overdue counts
+                printer.set(align='center', bold=True, double_height=True)
+                printer.text("Upcoming Tasks\n\n")
+                printer.set(align='left', bold=False, double_height=False, normal_textsize=True)
+                
+                # Print the counts
+                due_today = tasks_data.get('due_today', 0)
+                overdue = tasks_data.get('overdue', 0)
+                
+                printer.set(bold=True)
+                printer.text(f"Overdue: {overdue}  Due Today: {due_today}  Total: {len(tasks)}\n\n")
+                printer.set(bold=False)
+                
+                # Sort tasks by due date (they should already be sorted, but just to be sure)
+                tasks.sort(key=lambda x: x['due_date'])
+                
+                # Print each task
+                for task in tasks:
+                    title = task.get('title', 'No Title')
+                    description = task.get('description', '')
+                    due_date = task.get('due_date', '')
+                    
+                    # Format the due date
+                    try:
+                        # Parse the ISO format date
+                        dt = datetime.datetime.strptime(due_date, '%Y-%m-%dT%H:%M:%S.%f%z')
+                        # Format it in a more readable way
+                        formatted_date = dt.strftime('%a, %b %d, %Y')
+                    except:
+                        formatted_date = due_date
+                        
+                    # Print the task in the specified format
+                    printer.text("[ ] ")
+                    printer.set(bold=True)
+                    printer.text(f"{title}")
+                    printer.set(bold=False)
+                    
+                    if description:
+                        printer.text(f": {description}")
+                        
+                    printer.text(" (due ")
+                    printer.text(f"{formatted_date}")
+                    printer.text(")\n\n")
+            
+            print("Tasks printed successfully")
+        except Exception as e:
+            print(f"Error printing tasks: {str(e)}")
+        
+        # Cut the paper
+        try:
+            print("Cutting paper...")
+            printer.cut()
+            print("Paper cut successfully")
+        except Exception as e:
+            print(f"Error cutting paper: {str(e)}")
+            
+        return jsonify({"status": "success", "message": "Tasks printed successfully!"}), 200
+    except Exception as e:
+        print(f"Error in print_tasks: {str(e)}")
+        return jsonify({"status": "error", "message": f"Failed to print tasks: {str(e)}"}), 500
+
 # Simple test endpoint that doesn't require authentication
 @app.route('/')
 def index():
@@ -522,6 +683,7 @@ def index():
             {"path": "/due_tasks", "method": "GET", "description": "Get tasks with due dates from TickTick"},
             {"path": "/test_due_tasks", "method": "GET", "description": "Test endpoint for due tasks (no auth required)"},
             {"path": "/print_news", "method": "GET", "description": "Print news to the thermal printer"},
+            {"path": "/print_tasks", "method": "GET", "description": "Print only tasks, date, quote and random number"},
             {"path": "/print_text", "method": "GET", "description": "Print custom text to the thermal printer"}
         ]
     })
@@ -789,7 +951,7 @@ def due_tasks():
                 else:
                     print(f"Failed to get user project: {user_project_response.status_code}")
             
-            # Now process each regular project to get its tasks
+# Now process each regular project to get its tasks
             for i, project in enumerate(projects):
                 project_id = project.get('id')
                 project_name = project.get('name', 'Unknown')
