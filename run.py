@@ -145,12 +145,7 @@ def print_news():
             print(f"Error printing daily quote: {str(e)}")
         
         # Print due tasks
-        try:
-            print("Printing due tasks...")
-            print_due_tasks(printer=printer)
-            print("Due tasks printed successfully")
-        except Exception as e:
-            print(f"Error printing due tasks: {str(e)}")
+        # Due tasks printing removed as requested
 
         try:
             print("Printing Heidelberg News...")
@@ -559,7 +554,31 @@ def print_tasks():
             else:
                 tasks_data = tasks_response.json()
                 
-            print(f"Tasks data collected successfully: {tasks_data['task_count']} tasks")
+                # Filter tasks to only include overdue or due today
+                today = datetime.datetime.now(datetime.timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+                filtered_tasks = []
+                
+                for task in tasks_data.get('tasks', []):
+                    due_date_str = task.get('due_date')
+                    if not due_date_str:
+                        continue
+                        
+                    try:
+                        # Parse the ISO format date
+                        due_date = datetime.datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M:%S.%f%z')
+                        
+                        # Include only if due today or overdue
+                        if due_date.date() <= today.date():
+                            filtered_tasks.append(task)
+                    except Exception as e:
+                        print(f"Error parsing date {due_date_str}: {str(e)}")
+                
+                # Update tasks data with filtered tasks
+                tasks_data['tasks'] = filtered_tasks
+                tasks_data['task_count'] = len(filtered_tasks)
+                # due_today and overdue counts should already be correct
+                
+            print(f"Tasks data collected successfully: {tasks_data['task_count']} tasks (only overdue or due today)")
         except Exception as e:
             print(f"Error collecting tasks data: {str(e)}")
             return jsonify({"status": "error", "message": f"Failed to collect tasks data: {str(e)}"}), 500
@@ -610,7 +629,7 @@ def print_tasks():
             else:
                 # Print the header with due/overdue counts
                 printer.set(align='center', bold=True, double_height=True)
-                printer.text("Upcoming Tasks\n\n")
+                printer.text("Today's & Overdue Tasks\n\n")
                 printer.set(align='left', bold=False, double_height=False, normal_textsize=True)
                 
                 # Print the counts
