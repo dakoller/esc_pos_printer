@@ -5,3 +5,4 @@ python-dotenv
 flask
 yfinance==0.2.43
 ticktick-py
+beautifulsoup4
