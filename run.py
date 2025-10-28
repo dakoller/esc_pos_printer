@@ -161,13 +161,14 @@ def print_news():
         except Exception as e:
             print(f"Error printing Tagesschau: {str(e)}")
 
-        # Step 4: Cut the paper
+        # Print journal items
         try:
-            print("Cutting paper...")
             printer.cut()
-            print("Paper cut successfully")
+            print("Printing journal items...")
+            print_journal_items(printer=printer)
+            print("Journal items printed successfully")
         except Exception as e:
-            print(f"Error cutting paper: {str(e)}")
+            print(f"Error printing journal items: {str(e)}")
             
         return jsonify({"status": "success", "message": "Printed successfully!"}), 200
     except Exception as e:
@@ -1146,6 +1147,89 @@ def format_ticktick_tasks_for_display(tasks):
         formatted_output.append("\n".join(task_info))
     
     return formatted_output
+
+def print_journal_items(printer=None):
+    """
+    Print 2 random journal questions from morgenjournal_fragen.json
+    with a 1-4 scale for checking off.
+    """
+    try:
+        if printer is None:
+            printer = Network(printer_ip)
+        
+        # Load questions from JSON file
+        with open('morgenjournal_fragen.json', 'r', encoding='utf-8') as f:
+            questions = json.load(f)
+        
+        # Select 2 random questions
+        selected_questions = random.sample(questions, 3)
+        
+        # Print header
+        today = date.today()
+        #printer.set(double_width=True, double_height=True, align='center', bold=True)
+        #printer.text(f"Morgenjournal\n")
+        #printer.set(double_width=False, double_height=False, align='center', bold=False, normal_textsize=True)
+        #printer.text(f"{today.strftime('%A, %d.%m.%Y')}\n\n")
+        printer.set(align='left')
+        
+        # Print each question
+        for i, question in enumerate(selected_questions, 1):
+            # Question number and text
+            printer.set(bold=True)
+            printer.text(f"{i}. {question['frage']}\n")
+            printer.set(bold=False)
+            
+            # Scale explanation
+            printer.text(f"{question['skala_min']}: {question['min_bedeutung']}\n")
+            printer.text(f"{question['skala_max']}: {question['max_bedeutung']}\n\n")
+            
+            # Print checkboxes for scale 1-4
+            printer.set(bold=True)
+            printer.text("[ ] 1    [ ] 2    [ ] 3    [ ] 4\n\n")
+            printer.set(bold=False)
+            
+            # Add some space between questions
+            printer.text("\n")
+        
+        # Cut the paper
+        printer.text("\n\n")
+        printer.cut()
+        
+        print("Journal items printed successfully")
+        return {"status": "success", "questions": [q['frage'] for q in selected_questions]}
+        
+    except Exception as e:
+        print(f"Error printing journal items: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+
+@app.route('/print_journal', methods=['GET'])
+def print_journal():
+    """
+    Endpoint to print journal items
+    """
+    try:
+        printer = Network(printer_ip, timeout=30)
+        result = print_journal_items(printer=printer)
+        
+        if result['status'] == 'success':
+            return jsonify({
+                "status": "success", 
+                "message": "Journal items printed successfully!",
+                "questions": result['questions']
+            }), 200
+        else:
+            return jsonify({
+                "status": "error", 
+                "message": result['message']
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            "status": "error", 
+            "message": f"Failed to print journal items: {str(e)}"
+        }), 500
+
 
 # Execute the print job
 if __name__ == '__main__':

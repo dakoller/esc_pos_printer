@@ -1,0 +1,322 @@
+[
+  {
+    "id": 1,
+    "frage": "Schlafqualität",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "sehr schlecht geschlafen, häufig aufgewacht",
+    "max_bedeutung": "ausgezeichnet geschlafen, durchgehend erholsam"
+  },
+  {
+    "id": 2,
+    "frage": "Energielevel am Morgen",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "sehr erschöpft, kaum Antrieb",
+    "max_bedeutung": "sehr energiegeladen, voller Antrieb"
+  },
+  {
+    "id": 3,
+    "frage": "Stimmung/Gelassenheit",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "sehr niedergeschlagen/innerlich unruhig",
+    "max_bedeutung": "sehr positiv/ruhig und gelassen"
+  },
+  {
+    "id": 4,
+    "frage": "Fokus & geistige Klarheit",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "sehr zerstreut, schwer zu konzentrieren",
+    "max_bedeutung": "glasklar, leicht konzentriert"
+  },
+  {
+    "id": 5,
+    "frage": "Körpergefühl/Schmerzfreiheit",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "starke Beschwerden/Verspannungen",
+    "max_bedeutung": "beschwerdefrei, beweglich"
+  },
+  {
+    "id": 6,
+    "frage": "Motivation/Zwecksinn für den Tag",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "keine Lust/kein Sinngefühl",
+    "max_bedeutung": "hoch motiviert, klarer Sinn"
+  },
+  {
+    "id": 7,
+    "frage": "Stressniveau",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "extrem gestresst/überfordert",
+    "max_bedeutung": "sehr entspannt/unter Kontrolle"
+  },
+  {
+    "id": 8,
+    "frage": "Achtsamkeit/Präsenz",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "gedanklich abgelenkt/im Autopilot",
+    "max_bedeutung": "sehr präsent/achtsam"
+  },
+  {
+    "id": 9,
+    "frage": "Soziale Verbundenheit",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "fühle mich isoliert/abgekoppelt",
+    "max_bedeutung": "fühle mich verbunden/unterstützt"
+  },
+  {
+    "id": 10,
+    "frage": "Ernährung/Flüssigkeitsstatus am Morgen",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "mieses Gefühl: hungrig, dehydriert, schwer im Magen",
+    "max_bedeutung": "optimal: leicht genährt, hydriert, angenehm"
+  },
+  {
+    "id": 11,
+    "frage": "Dankbarkeit",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "keine Dankbarkeit verspürt",
+    "max_bedeutung": "tief dankbar und erfüllt"
+  },
+  {
+    "id": 12,
+    "frage": "Selbstvertrauen",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "unsicher, zweifelnd",
+    "max_bedeutung": "stark, selbstbewusst"
+  },
+  {
+    "id": 13,
+    "frage": "Kreativität",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "keine Inspiration",
+    "max_bedeutung": "voller Ideen und Kreativität"
+  },
+  {
+    "id": 14,
+    "frage": "Geduld",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "leicht reizbar, ungeduldig",
+    "max_bedeutung": "ruhig, gelassen, geduldig"
+  },
+  {
+    "id": 15,
+    "frage": "Selbstfürsorge",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "ignoriere eigene Bedürfnisse",
+    "max_bedeutung": "kümmere mich liebevoll um mich"
+  },
+  {
+    "id": 16,
+    "frage": "Optimismus",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "pessimistisch, zweifelnd",
+    "max_bedeutung": "sehr zuversichtlich, optimistisch"
+  },
+  {
+    "id": 17,
+    "frage": "Verbindung zur Natur",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "keinen Kontakt zur Natur gehabt",
+    "max_bedeutung": "bewusste Verbindung und Freude an der Natur"
+  },
+  {
+    "id": 18,
+    "frage": "Bewegung/Aktivität",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "kaum bewegt, träge",
+    "max_bedeutung": "aktiv, körperlich lebendig"
+  },
+  {
+    "id": 19,
+    "frage": "Atmung",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "flach, unruhig",
+    "max_bedeutung": "tief, ruhig und bewusst"
+  },
+  {
+    "id": 20,
+    "frage": "Emotionale Stabilität",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "sehr wechselhaft, gereizt",
+    "max_bedeutung": "stabil, ausgeglichen"
+  },
+  {
+    "id": 21,
+    "frage": "Inspiration",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "keine Impulse, leer",
+    "max_bedeutung": "inspiriert und offen"
+  },
+  {
+    "id": 22,
+    "frage": "Klarheit über Prioritäten",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "verwirrt, kein Fokus",
+    "max_bedeutung": "weiß genau, was wichtig ist"
+  },
+  {
+    "id": 23,
+    "frage": "Selbstakzeptanz",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "kritisch, ablehnend mir selbst gegenüber",
+    "max_bedeutung": "freundlich und akzeptierend mit mir"
+  },
+  {
+    "id": 24,
+    "frage": "Lebensfreude",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "freudlos, gleichgültig",
+    "max_bedeutung": "lebensfroh, begeistert"
+  },
+  {
+    "id": 25,
+    "frage": "Konzentration auf Ziele",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "verzettelt, keine Richtung",
+    "max_bedeutung": "klar fokussiert auf Ziele"
+  },
+  {
+    "id": 26,
+    "frage": "Verbindung zu Spiritualität",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "getrennt, kein Kontakt zum Inneren",
+    "max_bedeutung": "tief verbunden, in Harmonie"
+  },
+  {
+    "id": 27,
+    "frage": "Disziplin/Struktur",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "chaotisch, planlos",
+    "max_bedeutung": "konsequent, organisiert"
+  },
+  {
+    "id": 28,
+    "frage": "Dankbarkeit für den Körper",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "unzufrieden mit dem Körper",
+    "max_bedeutung": "liebevollen Respekt und Dankbarkeit"
+  },
+  {
+    "id": 29,
+    "frage": "Freude an Routinen",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "Routine als Zwang empfunden",
+    "max_bedeutung": "Routine als Halt und Freude"
+  },
+  {
+    "id": 30,
+    "frage": "Leichtigkeit im Denken",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "grübelnd, schwerfällig",
+    "max_bedeutung": "leicht, offen, frei"
+  },
+  {
+    "id": 31,
+    "frage": "Offenheit für Neues",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "ängstlich, verschlossen",
+    "max_bedeutung": "neugierig, lernbereit"
+  },
+  {
+    "id": 32,
+    "frage": "Selbstreflexion",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "nicht über mich nachgedacht",
+    "max_bedeutung": "bewusst reflektiert und erkannt"
+  },
+  {
+    "id": 33,
+    "frage": "Innere Ruhe",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "unruhig, nervös",
+    "max_bedeutung": "tief ruhig und ausgeglichen"
+  },
+  {
+    "id": 34,
+    "frage": "Verbindung mit Musik/Kunst",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "keinen Bezug, keine Inspiration",
+    "max_bedeutung": "tief berührt, inspiriert"
+  },
+  {
+    "id": 35,
+    "frage": "Humor/Leichtigkeit",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "ernst, schwer",
+    "max_bedeutung": "heiter, lachfreudig"
+  },
+  {
+    "id": 36,
+    "frage": "Zeit für mich selbst",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "keine Zeit genommen",
+    "max_bedeutung": "bewusst Zeit für mich gehabt"
+  },
+  {
+    "id": 37,
+    "frage": "Verbindung zu Mitmenschen",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "oberflächliche Kontakte",
+    "max_bedeutung": "tiefe, echte Verbindung"
+  },
+  {
+    "id": 38,
+    "frage": "Selbstwirksamkeit",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "fühle mich machtlos",
+    "max_bedeutung": "kann aktiv gestalten"
+  },
+  {
+    "id": 39,
+    "frage": "Ausrichtung auf langfristige Werte",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "verloren im Alltag",
+    "max_bedeutung": "klar an Werten orientiert"
+  },
+  {
+    "id": 40,
+    "frage": "Zufriedenheit mit Fortschritt",
+    "skala_min": 1,
+    "skala_max": 4,
+    "min_bedeutung": "unzufrieden, stagniert",
+    "max_bedeutung": "zufrieden mit Entwicklung"
+  }
+]
