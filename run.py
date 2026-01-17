@@ -14,6 +14,7 @@ import random
 from ticktick.oauth2 import OAuth2        # OAuth2 Manager
 from ticktick.api import TickTickClient   # Main Interface
 import datetime
+import re
 
 # Step 2: Connect to the ESC/POS printer
 printer_ip = '192.168.2.134'
@@ -218,11 +219,7 @@ def print_daily_basics(printer):
 
         sunset = requests.get("https://api.sunrise-sunset.org/json?lat=49.3988&lng=8.6724&date=today&tzid=Europe/Berlin").json()
 
-        printer.text(f"{ sunset['results']['sunrise'] } - { sunset['results']['sunset']}\n")
-
-        printer.set(double_width=True, double_height=True, align='center')
-        printer.text(f'# { random.randint(1,53) }\n')
-        printer.set(double_width=False, double_height=False, align='center', normal_textsize=True)
+        printer.text(f"{ sunset['results']['sunrise'] } - { sunset['results']['sunset']}\n\n")
 
         printer.set(align='left')
 
@@ -487,19 +484,83 @@ def ticktick_callback():
             "message": f"Error in callback: {str(e)}"
         }), 500
 
+def get_daily_marc_aurel_quote():
+    """
+    Get a paragraph from Marc Aurel's Meditations based on the current date.
+    Returns a tuple of (quote_text, source) where source is the book and paragraph number.
+    """
+    try:
+        # Read the Marc Aurel text file
+        with open('data/marc_aurel.txt', 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Split into paragraphs - looking for numbered sections
+        # Pattern: lines that start with a number followed by a period and space
+        import re
+        
+        # Find all numbered paragraphs (e.g., "1\n\nText..." or "1. Text...")
+        # Split by book sections first
+        books = re.split(r'\n\n([A-Z][a-zö]+ Buch)\n\n', content)
+        
+        paragraphs = []
+        current_book = "Erstes Buch"
+        
+        for i, section in enumerate(books):
+            if 'Buch' in section:
+                current_book = section
+                continue
+            
+            # Find numbered paragraphs within each book section
+            # Split by pattern: newline followed by number at start of line
+            parts = re.split(r'\n\n+(\d+)\n\n', section)
+            
+            paragraph_num = None
+            for part in parts:
+                if part.strip().isdigit():
+                    paragraph_num = part.strip()
+                elif paragraph_num and len(part.strip()) > 50:  # Only substantial paragraphs
+                    paragraphs.append({
+                        'text': part.strip(),
+                        'book': current_book,
+                        'number': paragraph_num
+                    })
+                    paragraph_num = None
+        
+        # Use current date to deterministically select a paragraph
+        from datetime import date
+        today = date.today()
+        # Create a deterministic index based on the date
+        day_index = (today.year * 10000 + today.month * 100 + today.day) % len(paragraphs)
+        
+        selected = paragraphs[day_index]
+        
+        # Truncate if too long (more than 500 characters)
+        quote_text = selected['text']
+        if len(quote_text) > 500:
+            quote_text = quote_text[:497] + "..."
+        
+        source = f"{selected['book']}, {selected['number']}"
+        
+        return quote_text, source
+        
+    except Exception as e:
+        print(f"Error getting Marc Aurel quote: {str(e)}")
+        # Fallback to a simple quote
+        return "Was zu dem Wandlungsprozeß gehört, dem wir alle unterworfen sind, das kann als solches weder gut noch böse sein.", "Marc Aurel"
+
+
 def print_daily_quote(printer):
     try:
         if printer == None:
             printer= Network(printer_ip)
 
-        r = requests.get('https://zenquotes.io/api/today').json()[0]
+        quote_text, source = get_daily_marc_aurel_quote()
 
         printer.set(bold= True,double_width=True,align='center')
-        printer.text(f"\n\n{ r['q'] }\n")
+        printer.text(f"\n\n{ quote_text }\n")
         printer.set(bold= False,normal_textsize=True, align='center')
-        printer.text(f"\n{ r['a'] }\n\n")
+        printer.text(f"\n{ source }\n\n")
         printer.set(bold= False,normal_textsize=True, align='left')
-        #pprint(r)
 
     except Exception as e:
         pprint(e)
@@ -515,6 +576,7 @@ def print_tasks():
         try:
             today = date.today()
             today_str = today.strftime('%A %x')
+            is_weekday = today.weekday() < 5  # Monday=0, Sunday=6
             
             # Get sunrise/sunset data
             sunset_response = requests.get("https://api.sunrise-sunset.org/json?lat=49.3988&lng=8.6724&date=today&tzid=Europe/Berlin")
@@ -524,27 +586,10 @@ def print_tasks():
             else:
                 sunset_data = sunset_response.json()['results']
             
-            # Generate random number
-            random_number = random.randint(1, 53)
-            
             print("Daily basics data collected successfully")
         except Exception as e:
             print(f"Error collecting daily basics data: {str(e)}")
             return jsonify({"status": "error", "message": f"Failed to collect daily basics data: {str(e)}"}), 500
-        
-        # Get daily quote
-        try:
-            quote_response = requests.get('https://zenquotes.io/api/today')
-            if quote_response.status_code != 200:
-                print(f"Failed to get quote: {quote_response.status_code}")
-                quote_data = {"q": "Error getting quote", "a": ""}
-            else:
-                quote_data = quote_response.json()[0]
-                
-            print("Quote data collected successfully")
-        except Exception as e:
-            print(f"Error collecting quote data: {str(e)}")
-            return jsonify({"status": "error", "message": f"Failed to collect quote data: {str(e)}"}), 500
         
         # Get due tasks
         try:
@@ -556,7 +601,7 @@ def print_tasks():
                 tasks_data = tasks_response.json()
                 
                 # Filter tasks to only include overdue or due today
-                today = datetime.datetime.now(datetime.timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+                today_dt = datetime.datetime.now(datetime.timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
                 filtered_tasks = []
                 
                 for task in tasks_data.get('tasks', []):
@@ -569,7 +614,7 @@ def print_tasks():
                         due_date = datetime.datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M:%S.%f%z')
                         
                         # Include only if due today or overdue
-                        if due_date.date() <= today.date():
+                        if due_date.date() <= today_dt.date():
                             filtered_tasks.append(task)
                     except Exception as e:
                         print(f"Error parsing date {due_date_str}: {str(e)}")
@@ -598,27 +643,11 @@ def print_tasks():
             printer.set(double_width=True, double_height=True, align='center', bold=True)
             printer.text(f"{today_str}\n\n")
             printer.set(double_width=False, double_height=False, align='center', bold=False, normal_textsize=True)
-            printer.text(f"{sunset_data['sunrise']} - {sunset_data['sunset']}\n")
-            
-            printer.set(double_width=True, double_height=True, align='center')
-            printer.text(f'# {random_number}\n')
-            printer.set(double_width=False, double_height=False, align='center', normal_textsize=True)
+            printer.text(f"{sunset_data['sunrise']} - {sunset_data['sunset']}\n\n")
             printer.set(align='left')
             print("Date and basics printed successfully")
         except Exception as e:
             print(f"Error printing date and basics: {str(e)}")
-            
-        # Print the quote
-        try:
-            print("Printing quote...")
-            printer.set(bold=True, double_width=True, align='center')
-            printer.text(f"\n\n{quote_data['q']}\n")
-            printer.set(bold=False, normal_textsize=True, align='center')
-            printer.text(f"\n{quote_data['a']}\n\n")
-            printer.set(bold=False, normal_textsize=True, align='left')
-            print("Quote printed successfully")
-        except Exception as e:
-            print(f"Error printing quote: {str(e)}")
         
         # Print the tasks
         try:
@@ -628,49 +657,106 @@ def print_tasks():
             if not tasks:
                 printer.text("\nNo due tasks found\n\n")
             else:
-                # Print the header with due/overdue counts
-                printer.set(align='center', bold=True, double_height=True)
-                printer.text("Today's & Overdue Tasks\n\n")
-                printer.set(align='left', bold=False, double_height=False, normal_textsize=True)
+                # Group tasks by tags
+                import re
+                tag_groups = {}
                 
-                # Print the counts
-                due_today = tasks_data.get('due_today', 0)
-                overdue = tasks_data.get('overdue', 0)
-                
-                printer.set(bold=True)
-                printer.text(f"Overdue: {overdue}  Due Today: {due_today}  Total: {len(tasks)}\n\n")
-                printer.set(bold=False)
-                
-                # Sort tasks by due date (they should already be sorted, but just to be sure)
-                tasks.sort(key=lambda x: x['due_date'])
-                
-                # Print each task
                 for task in tasks:
                     title = task.get('title', 'No Title')
                     description = task.get('description', '')
-                    due_date = task.get('due_date', '')
                     
-                    # Format the due date
-                    try:
-                        # Parse the ISO format date
-                        dt = datetime.datetime.strptime(due_date, '%Y-%m-%dT%H:%M:%S.%f%z')
-                        # Format it in a more readable way
-                        formatted_date = dt.strftime('%a, %b %d, %Y')
-                    except:
-                        formatted_date = due_date
+                    # Get tags from TickTick task object (array of tag names)
+                    task_tags = task.get('tags', [])
+                    
+                    # Also find hashtags in title and description as fallback
+                    combined_text = f"{title} {description}"
+                    text_tags = re.findall(r'#(\w+)', combined_text)
+                    
+                    # Combine tags from both sources
+                    all_tags = task_tags + text_tags
+                    
+                    if all_tags:
+                        # Use the first tag found as the primary tag
+                        primary_tag = all_tags[0].lower()
                         
-                    # Print the task in the specified format
-                    printer.text("[ ] ")
+                        # Skip #sap tasks on weekends
+                        if primary_tag == 'sap' and not is_weekday:
+                            print(f"Skipping #sap task on weekend: {title}")
+                            continue
+                        
+                        if primary_tag not in tag_groups:
+                            tag_groups[primary_tag] = []
+                        tag_groups[primary_tag].append(task)
+                    else:
+                        # Tasks without tags go to "untagged" group
+                        if 'untagged' not in tag_groups:
+                            tag_groups['untagged'] = []
+                        tag_groups['untagged'].append(task)
+                
+                # Count tasks after filtering
+                total_tasks = sum(len(tasks) for tasks in tag_groups.values())
+                
+                if total_tasks == 0:
+                    printer.text("\nNo due tasks found\n\n")
+                else:
+                    # Print the header with due/overdue counts
+                    printer.set(align='center', bold=True, double_height=True)
+                    printer.text("Today's & Overdue Tasks\n\n")
+                    printer.set(align='left', bold=False, double_height=False, normal_textsize=True)
+                    
+                    # Print the counts
+                    due_today = tasks_data.get('due_today', 0)
+                    overdue = tasks_data.get('overdue', 0)
+                    
                     printer.set(bold=True)
-                    printer.text(f"{title}")
+                    printer.text(f"Overdue: {overdue}  Due Today: {due_today}  Total: {total_tasks}\n\n")
                     printer.set(bold=False)
                     
-                    if description:
-                        printer.text(f": {description}")
+                    # Sort tag groups alphabetically
+                    sorted_tags = sorted(tag_groups.keys())
+                    
+                    # Print tasks grouped by tag
+                    for tag in sorted_tags:
+                        tag_tasks = tag_groups[tag]
                         
-                    printer.text(" (due ")
-                    printer.text(f"{formatted_date}")
-                    printer.text(")\n\n")
+                        # Print tag header
+                        printer.set(bold=True, double_width=False, double_height=False)
+                        if tag == 'untagged':
+                            printer.text(f"\n--- No Tag ---\n\n")
+                        else:
+                            printer.text(f"\n--- #{tag.upper()} ---\n\n")
+                        printer.set(bold=False)
+                        
+                        # Sort tasks within the group by due date
+                        tag_tasks.sort(key=lambda x: x['due_date'])
+                        
+                        # Print each task in the group
+                        for task in tag_tasks:
+                            title = task.get('title', 'No Title')
+                            description = task.get('description', '')
+                            due_date = task.get('due_date', '')
+                            
+                            # Format the due date
+                            try:
+                                # Parse the ISO format date
+                                dt = datetime.datetime.strptime(due_date, '%Y-%m-%dT%H:%M:%S.%f%z')
+                                # Format it in a more readable way
+                                formatted_date = dt.strftime('%a, %b %d, %Y')
+                            except:
+                                formatted_date = due_date
+                                
+                            # Print the task in the specified format
+                            printer.text("[ ] ")
+                            printer.set(bold=True)
+                            printer.text(f"{title}")
+                            printer.set(bold=False)
+                            
+                            if description:
+                                printer.text(f": {description}")
+                                
+                            printer.text(" (due ")
+                            printer.text(f"{formatted_date}")
+                            printer.text(")\n\n")
             
             print("Tasks printed successfully")
         except Exception as e:
@@ -914,10 +1000,11 @@ def due_tasks():
                                 'status': 'Completed' if task.get('status', 0) == 2 else 'Not Completed',
                                 'id': task.get('id', ''),
                                 'project_id': inbox_project_id,
-                                'project_name': inbox_project_name
+                                'project_name': inbox_project_name,
+                                'tags': task.get('tags', [])
                             }
                             all_due_tasks.append(formatted_task)
-                            print(f"Added task with due date from inbox project: {task.get('title')} (Due: {task.get('dueDate')})")
+                            print(f"Added task with due date from inbox project: {task.get('title')} (Due: {task.get('dueDate')}), Tags: {task.get('tags', [])}")
                 else:
                     print(f"No tasks found in inbox project data. Keys: {list(inbox_project_data.keys())}")
             else:
@@ -960,10 +1047,11 @@ def due_tasks():
                                             'status': 'Completed' if task.get('status', 0) == 2 else 'Not Completed',
                                             'id': task.get('id', ''),
                                             'project_id': user_project_id,
-                                            'project_name': user_project_name
+                                            'project_name': user_project_name,
+                                            'tags': task.get('tags', [])
                                         }
                                         all_due_tasks.append(formatted_task)
-                                        print(f"Added task with due date from user project: {task.get('title')} (Due: {task.get('dueDate')})")
+                                        print(f"Added task with due date from user project: {task.get('title')} (Due: {task.get('dueDate')}), Tags: {task.get('tags', [])}")
                             else:
                                 print(f"No tasks found in user project data. Keys: {list(user_project_data.keys())}")
                         else:
@@ -1006,10 +1094,11 @@ def due_tasks():
                                     'status': 'Completed' if task.get('status', 0) == 2 else 'Not Completed',
                                     'id': task.get('id', ''),
                                     'project_id': project_id,
-                                    'project_name': project_name
+                                    'project_name': project_name,
+                                    'tags': task.get('tags', [])
                                 }
                                 all_due_tasks.append(formatted_task)
-                                print(f"Added task with due date: {task.get('title')} (Due: {task.get('dueDate')})")
+                                print(f"Added task with due date: {task.get('title')} (Due: {task.get('dueDate')}), Tags: {task.get('tags', [])}")
                     else:
                         print(f"No tasks found in project data. Keys: {list(project_data.keys())}")
                 else:
