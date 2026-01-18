@@ -556,7 +556,7 @@ def print_daily_quote(printer):
 
         quote_text, source = get_daily_marc_aurel_quote()
 
-        printer.set(bold= True,double_width=True,align='center')
+        printer.set(bold= False,double_width=True,align='center')
         printer.text(f"\n\n{ quote_text }\n")
         printer.set(bold= False,normal_textsize=True, align='center')
         printer.text(f"\n{ source }\n\n")
