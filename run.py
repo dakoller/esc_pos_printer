@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv, dotenv_values 
 from pprint import pprint
 from flask import Flask, redirect, request, session, url_for, jsonify
+from PIL import Image, ImageDraw, ImageFont
 load_dotenv()
 import json
 from datetime import date
@@ -115,6 +116,96 @@ def print_due_tasks(printer):
         print(f"Error printing due tasks: {str(e)}")
 
 # Step 3: Format and print the news
+def get_weather_forecast(city="Heidelberg", country="Germany"):
+    try:
+        url = f"https://api.open-meteo.com/v1/forecast?latitude=49.3988&longitude=8.6724&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FBerlin"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            current = data['current_weather']
+            daily = data['daily']
+            weather_codes = {
+                0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+                45: "Fog", 48: "Depositing rime fog", 51: "Light drizzle", 53: "Moderate drizzle", 55: "Dense drizzle",
+                61: "Slight rain", 63: "Moderate rain", 65: "Heavy rain", 71: "Slight snow", 73: "Moderate snow", 
+                75: "Heavy snow", 77: "Snow grains", 80: "Rain showers", 81: "Heavy rain showers", 82: "Violent rain showers",
+                95: "Thunderstorm", 96: "Thunderstorm with slight hail", 99: "Thunderstorm with heavy hail"
+            }
+            return {
+                "temp": current['temperature'],
+                "desc": weather_codes.get(current['weathercode'], "Unknown"),
+                "max": daily['temperature_2m_max'][0],
+                "min": daily['temperature_2m_min'][0]
+            }
+    except Exception as e:
+        print(f"Error fetching weather: {e}")
+    return None
+
+def create_print_image(content_dict):
+    width = 384
+    padding = 20
+    line_height = 30
+    total_height = padding * 2
+    for item in content_dict.values():
+        if isinstance(item, str):
+            lines = len(textwrap.wrap(item, width=30)) if item else 0
+            total_height += lines * line_height
+        elif isinstance(item, dict):
+            total_height += 60 
+        total_height += 10
+    img = Image.new('L', (width, total_height), color=255)
+    draw = ImageDraw.Draw(img)
+    try:
+        font_text = ImageFont.truetype("Arial.ttf", 18)
+        font_small = ImageFont.truetype("Arial.ttf", 14)
+    except:
+        font_text = ImageFont.load_default()
+        font_small = ImageFont.load_default()
+    current_y = padding
+    for key, value in content_dict.items():
+        draw.text((padding, current_y), f"{key.upper()}", fill=0, font=font_small)
+        current_y += 20
+        if key == 'quote' or key == 'news':
+            lines = textwrap.wrap(value, width=35)
+            for line in lines:
+                draw.text((padding, current_y), line, fill=0, font=font_text)
+                current_y += 22
+            current_y += 10
+        elif key == 'weather':
+            text = f"{value['temp']}°C | {value['desc']}\nMax: {value['max']}°C Min: {value['min']}°C"
+            for line in text.split('\n'):
+                draw.text((padding, current_y), line, fill=0, font=font_text)
+                current_y += 22
+            current_y += 10
+    return img.crop((0, 0, width, current_y + padding))
+
+@app.route('/print_news2', methods=['GET'])
+def print_news2():
+    try:
+        printer = Network(printer_ip, timeout=30)
+        # Collect data
+        quote_text, quote_source = get_daily_marc_aurel_quote()
+        weather = get_weather_forecast()
+        
+        # For news, we'll pick the top 3 headlines from the main feed
+        feed = feedparser.parse('https://www.rnz.de/feed/139-RL_Heidelberg_free.xml')
+        news_text = "\n".join([entry.title for entry in feed.entries[:3]])
+        
+        content = {
+            "weather": weather,
+            "quote": f"\"{quote_text}\" - {quote_source}",
+            "news": news_text
+        }
+        
+        img = create_print_image(content)
+        printer.set(align='center')
+        printer.image(img)
+        printer.cut()
+        
+        return jsonify({"status": "success", "message": "Image printed successfully!"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/print_news', methods=['GET'])
 def print_news():
     try:
